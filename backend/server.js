@@ -9,11 +9,12 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://warehouse-system.vercel.app", // ← رابط Vercel الخاص بك
+      "https://warehouse-system-hazel.vercel.app",
     ],
     credentials: true,
   }),
 );
+
 app.use(express.json());
 
 // كل الـ Routes
