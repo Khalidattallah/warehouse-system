@@ -4,12 +4,12 @@ const cors = require("cors");
 require("./db/db");
 
 const app = express();
-
 app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://warehouse-system-hazel.vercel.app",
+      "https://khalidattallah90-warehouse-system.vercel.app",
+      "https://khalidattallah90-warehouse-system-g0cf3xdub.vercel.app",
     ],
     credentials: true,
   }),
