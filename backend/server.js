@@ -6,11 +6,7 @@ require("./db/db");
 const app = express();
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://khalidattallah90-warehouse-system.vercel.app",
-      "https://khalidattallah90-warehouse-system-g0cf3xdub.vercel.app",
-    ],
+    origin: ["http://localhost:3000", /\.vercel\.app$/],
     credentials: true,
   }),
 );
