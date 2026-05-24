@@ -8,7 +8,11 @@ const app = express();
 // CORS
 app.use(
   cors({
-    origin: ["http://localhost:3000", /\.vercel\.app$/],
+    origin: [
+      "http://localhost:3000",
+      "https://warehouse-system-bm5k.onrender.com",
+      /\.vercel\.app$/, // يقبل كل روابط Vercel
+    ],
     credentials: true,
   }),
 );
