@@ -1,17 +1,21 @@
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
-const path = require("path");
 
-// إعداد مكان حفظ الصور
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/"); // احفظ في مجلد uploads
-  },
+// إعداد Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET,
+});
 
-  filename: (req, file, cb) => {
-    // اسم الملف = وقت الآن + الاسم الأصلي
-    // مثال: 1714500000000-ceramic.jpg
-    const uniqueName = Date.now() + "-" + file.originalname.replace(/\s/g, "_");
-    cb(null, uniqueName);
+// إعداد مكان الحفظ — Cloudinary بدل القرص
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "warehouse-items", // مجلد في Cloudinary
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation: [{ width: 800, height: 800, crop: "limit" }],
   },
 });
 
@@ -19,7 +23,7 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
   if (allowed.includes(file.mimetype)) {
-    cb(null, true); // اقبل الملف
+    cb(null, true);
   } else {
     cb(new Error("يُسمح فقط بصور JPG و PNG و WebP"), false);
   }
@@ -28,7 +32,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 ميغابايت كحد أقصى
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 ميغابايت
 });
 
 module.exports = upload;

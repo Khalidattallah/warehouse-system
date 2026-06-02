@@ -31,7 +31,6 @@ app.use("/api/orders", require("./routes/orders"));
 app.use("/api", require("./routes/misc"));
 
 // اجعل مجلد uploads متاحاً كملفات ثابتة
-app.use("/uploads", express.static("uploads"));
 
 app.get("/", (req, res) => {
   res.json({
