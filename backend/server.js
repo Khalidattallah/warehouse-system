@@ -10,8 +10,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://warehouse-system-bm5k.onrender.com",
-      /\.vercel\.app$/, // يقبل كل روابط Vercel
+      "https://warehouse-system-rust.vercel.app",
+      /\.vercel\.app$/,
     ],
     credentials: true,
   }),
