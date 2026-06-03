@@ -25,13 +25,11 @@ router.get("/", verifyToken, async (req, res) => {
     res.json({ success: true, data: rows });
   } catch (err) {
     console.error("❌ items GET:", err.message);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "خطأ في جلب الأصناف",
-        error: err.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "خطأ في جلب الأصناف",
+      error: err.message,
+    });
   }
 });
 
@@ -72,13 +70,11 @@ router.post(
         ],
       );
 
-      res
-        .status(201)
-        .json({
-          success: true,
-          message: "تم إضافة الصنف بنجاح",
-          id: result.insertId,
-        });
+      res.status(201).json({
+        success: true,
+        message: "تم إضافة الصنف بنجاح",
+        id: result.insertId,
+      });
     } catch (err) {
       console.error("❌ items POST:", err.message);
       if (err.code === "ER_DUP_ENTRY") {
@@ -101,7 +97,13 @@ router.put(
   upload.single("image"),
   async (req, res) => {
     try {
-      const { item_name, category, quantity, price, min_quantity } = req.body;
+      console.log("=== PUT /items/:id ===");
+      console.log("id:", req.params.id);
+      console.log("body:", req.body);
+      console.log("file:", req.file ? "✅ صورة موجودة" : "❌ لا صورة");
+
+      const { item_name, category, quantity, price, min_quantity, image_url } =
+        req.body;
 
       if (!item_name || !price) {
         return res
@@ -109,28 +111,33 @@ router.put(
           .json({ success: false, message: "الاسم والسعر مطلوبان" });
       }
 
-      // إذا رُفعت صورة جديدة استخدمها وإلا احتفظ بالقديمة
-      const image_url = req.file ? req.file.path : req.body.image_url || null;
+      const finalImageUrl = req.file ? req.file.path : image_url || null;
 
-      await db.query(
+      console.log("finalImageUrl:", finalImageUrl);
+
+      const [result] = await db.query(
         "UPDATE items SET item_name=?, category=?, quantity=?, price=?, min_quantity=?, image_url=? WHERE id=?",
         [
           item_name,
-          category,
-          Number(quantity),
+          category || "أخرى",
+          Number(quantity) || 0,
           Number(price),
-          Number(min_quantity),
-          image_url,
+          Number(min_quantity) || 5,
+          finalImageUrl,
           req.params.id,
         ],
       );
 
+      console.log("result:", result);
       res.json({ success: true, message: "تم تحديث الصنف بنجاح" });
     } catch (err) {
-      console.error("❌ items PUT:", err.message);
-      res
-        .status(500)
-        .json({ success: false, message: "خطأ في الخادم", error: err.message });
+      console.error("❌ PUT /items error:", err.message);
+      console.error("❌ stack:", err.stack);
+      res.status(500).json({
+        success: false,
+        message: "خطأ في الخادم",
+        error: err.message,
+      });
     }
   },
 );
