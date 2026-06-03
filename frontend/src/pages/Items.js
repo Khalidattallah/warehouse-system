@@ -13,49 +13,17 @@ export default function Items() {
   const [editItem, setEditItem] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  // الفورم — كل حقل مستقل
-
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
+  const [imageFile, setImageFile] = useState(null);
 
   const [itemCode, setItemCode] = useState("");
-
   const [itemName, setItemName] = useState("");
   const [itemCat, setItemCat] = useState("بورسلين");
   const [itemQty, setItemQty] = useState("");
   const [itemPrice, setItemPrice] = useState("");
   const [itemMinQty, setItemMinQty] = useState("5");
-
-  const handleImageUpload = async (file) => {
-    if (!file) return;
-
-    // معاينة محلية فورية
-    const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target.result);
-    reader.readAsDataURL(file);
-
-    // رفع للخادم
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const res = await api.post("/items/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      setImageUrl(res.data.image_url);
-      console.log("تم رفع الصورة:", res.data.image_url);
-    } catch (err) {
-      alert("خطأ في رفع الصورة");
-      console.error(err);
-    } finally {
-      setUploading(false);
-    }
-  };
+  const [itemImgUrl, setItemImgUrl] = useState("");
 
   const fetchItems = async () => {
     setLoading(true);
@@ -75,6 +43,7 @@ export default function Items() {
   useEffect(() => {
     fetchItems();
   }, [category, search]);
+
   const openAdd = () => {
     setEditItem(null);
     setItemCode("");
@@ -83,8 +52,9 @@ export default function Items() {
     setItemQty("");
     setItemPrice("");
     setItemMinQty("5");
-    setImageUrl("");
+    setItemImgUrl("");
     setImagePreview("");
+    setImageFile(null);
     setError("");
     setShowModal(true);
   };
@@ -97,11 +67,21 @@ export default function Items() {
     setItemQty(String(item.quantity));
     setItemPrice(String(item.price));
     setItemMinQty(String(item.min_quantity));
-    setImageUrl(item.image_url || "");
+    setItemImgUrl(item.image_url || "");
     setImagePreview(item.image_url || "");
+    setImageFile(null);
     setError("");
     setShowModal(true);
   };
+
+  const handleImageChange = (file) => {
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setImagePreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
     if (!itemCode.trim()) {
       setError("كود الصنف مطلوب");
@@ -116,27 +96,40 @@ export default function Items() {
       return;
     }
 
-    const body = {
-      item_code: itemCode.trim(),
-      item_name: itemName.trim(),
-      category: itemCat,
-      quantity: Number(itemQty) || 0,
-      price: Number(itemPrice),
-      min_quantity: Number(itemMinQty) || 5,
-      image_url: imageUrl || null,
-    };
-
     setSaving(true);
     setError("");
+
     try {
-      if (editItem) {
-        await api.put(`/items/${editItem.id}`, body);
-      } else {
-        await api.post("/items", body);
+      // نستخدم FormData لإرسال الصورة مع البيانات
+      const formData = new FormData();
+      formData.append("item_code", itemCode.trim());
+      formData.append("item_name", itemName.trim());
+      formData.append("category", itemCat);
+      formData.append("quantity", itemQty || "0");
+      formData.append("price", itemPrice);
+      formData.append("min_quantity", itemMinQty || "5");
+
+      // أضف الصورة إذا اختار المستخدم صورة جديدة
+      if (imageFile) {
+        formData.append("image", imageFile);
+      } else if (itemImgUrl) {
+        formData.append("image_url", itemImgUrl);
       }
+
+      if (editItem) {
+        await api.put(`/items/${editItem.id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        await api.post("/items", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
       setShowModal(false);
       fetchItems();
     } catch (err) {
+      console.error(err.response?.data);
       setError(err.response?.data?.message || "خطأ في الحفظ");
     } finally {
       setSaving(false);
@@ -155,7 +148,6 @@ export default function Items() {
 
   return (
     <Layout title="إدارة الأصناف">
-      {/* أدوات البحث والفلترة */}
       <div style={styles.toolbar}>
         <input
           type="text"
@@ -188,7 +180,6 @@ export default function Items() {
         </button>
       </div>
 
-      {/* الجدول */}
       <div style={styles.tableCard}>
         {loading ? (
           <div style={styles.center}>جاري التحميل...</div>
@@ -196,11 +187,11 @@ export default function Items() {
           <table style={styles.table}>
             <thead>
               <tr style={styles.thead}>
+                <th style={styles.th}>الصورة</th>
                 <th style={styles.th}>الكود</th>
                 <th style={styles.th}>اسم الصنف</th>
                 <th style={styles.th}>الفئة</th>
                 <th style={styles.th}>الكمية</th>
-                <th style={styles.th}>الحد الأدنى</th>
                 <th style={styles.th}>السعر</th>
                 <th style={styles.th}>الحالة</th>
                 <th style={styles.th}>إجراءات</th>
@@ -211,6 +202,35 @@ export default function Items() {
                 const isLow = item.quantity <= item.min_quantity;
                 return (
                   <tr key={item.id} style={styles.tr}>
+                    <td style={styles.td}>
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.item_name}
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 6,
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 6,
+                            background: "#f5f7fa",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 20,
+                          }}
+                        >
+                          🪨
+                        </div>
+                      )}
+                    </td>
                     <td
                       style={{
                         ...styles.td,
@@ -221,42 +241,7 @@ export default function Items() {
                       {item.item_code}
                     </td>
                     <td style={{ ...styles.td, fontWeight: 500 }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                        }}
-                      >
-                        {item.image_url ? (
-                          <img
-                            src={item.image_url}
-                            alt={item.item_name}
-                            style={{
-                              width: "36px",
-                              height: "36px",
-                              borderRadius: "6px",
-                              objectFit: "cover",
-                            }}
-                          />
-                        ) : (
-                          <div
-                            style={{
-                              width: "36px",
-                              height: "36px",
-                              borderRadius: "6px",
-                              background: "#f5f7fa",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "18px",
-                            }}
-                          >
-                            🪨
-                          </div>
-                        )}
-                        {item.item_name}
-                      </div>
+                      {item.item_name}
                     </td>
                     <td style={styles.td}>
                       <span style={styles.catBadge}>{item.category}</span>
@@ -270,9 +255,6 @@ export default function Items() {
                     >
                       {item.quantity}
                     </td>
-                    <td style={{ ...styles.td, color: "#888" }}>
-                      {item.min_quantity}
-                    </td>
                     <td style={{ ...styles.td, fontWeight: 600 }}>
                       {Number(item.price).toLocaleString()} ج.س
                     </td>
@@ -282,8 +264,8 @@ export default function Items() {
                           background: isLow ? "#fef2f2" : "#e8f5f0",
                           color: isLow ? "#ef4444" : "#1D9E75",
                           padding: "3px 10px",
-                          borderRadius: "20px",
-                          fontSize: "12px",
+                          borderRadius: 20,
+                          fontSize: 12,
                           fontWeight: 500,
                         }}
                       >
@@ -317,7 +299,6 @@ export default function Items() {
         )}
       </div>
 
-      {/* نافذة الإضافة/التعديل */}
       {showModal && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
@@ -346,7 +327,6 @@ export default function Items() {
                   disabled={!!editItem}
                 />
               </div>
-
               <div>
                 <label style={styles.label}>اسم الصنف *</label>
                 <input
@@ -356,7 +336,6 @@ export default function Items() {
                   placeholder="مثال: بورسلين 60×60"
                 />
               </div>
-
               <div>
                 <label style={styles.label}>الفئة</label>
                 <select
@@ -371,7 +350,6 @@ export default function Items() {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label style={styles.label}>الكمية</label>
                 <input
@@ -383,7 +361,6 @@ export default function Items() {
                   placeholder="0"
                 />
               </div>
-
               <div>
                 <label style={styles.label}>السعر (ج.س) *</label>
                 <input
@@ -395,7 +372,6 @@ export default function Items() {
                   placeholder="0"
                 />
               </div>
-
               <div>
                 <label style={styles.label}>الحد الأدنى للتنبيه</label>
                 <input
@@ -407,22 +383,13 @@ export default function Items() {
                   placeholder="5"
                 />
               </div>
-              {/* حقل رفع الصورة */}
+
+              {/* رفع الصورة */}
               <div style={{ gridColumn: "1 / -1" }}>
                 <label style={styles.label}>صورة الصنف</label>
-
-                {/* منطقة السحب والإفلات */}
                 <div
-                  style={{
-                    border: "2px dashed #e0e0e0",
-                    borderRadius: "10px",
-                    padding: "1rem",
-                    textAlign: "center",
-                    cursor: "pointer",
-                    background: "#fafafa",
-                    transition: "border .2s",
-                  }}
-                  onClick={() => document.getElementById("imageInput").click()}
+                  style={styles.uploadArea}
+                  onClick={() => document.getElementById("imgInput").click()}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.currentTarget.style.borderColor = "#1D9E75";
@@ -433,8 +400,7 @@ export default function Items() {
                   onDrop={(e) => {
                     e.preventDefault();
                     e.currentTarget.style.borderColor = "#e0e0e0";
-                    const file = e.dataTransfer.files[0];
-                    if (file) handleImageUpload(file);
+                    handleImageChange(e.dataTransfer.files[0]);
                   }}
                 >
                   {imagePreview ? (
@@ -443,82 +409,39 @@ export default function Items() {
                         src={imagePreview}
                         alt="معاينة"
                         style={{
-                          maxHeight: "140px",
+                          maxHeight: 140,
                           maxWidth: "100%",
-                          borderRadius: "8px",
+                          borderRadius: 8,
                           objectFit: "cover",
                         }}
                       />
                       <div
-                        style={{
-                          fontSize: "12px",
-                          color: "#888",
-                          marginTop: "6px",
-                        }}
+                        style={{ fontSize: 12, color: "#888", marginTop: 6 }}
                       >
-                        {uploading
-                          ? "⏳ جاري الرفع..."
-                          : "✅ تم رفع الصورة — اضغط لتغييرها"}
+                        اضغط لتغيير الصورة
                       </div>
                     </div>
                   ) : (
                     <div>
-                      <div style={{ fontSize: "36px", marginBottom: "8px" }}>
-                        📸
-                      </div>
-                      <div style={{ fontSize: "13px", color: "#888" }}>
-                        {uploading
-                          ? "⏳ جاري الرفع..."
-                          : "اضغط لاختيار صورة أو اسحبها هنا"}
+                      <div style={{ fontSize: 36, marginBottom: 8 }}>📸</div>
+                      <div style={{ fontSize: 13, color: "#888" }}>
+                        اضغط لاختيار صورة أو اسحبها هنا
                       </div>
                       <div
-                        style={{
-                          fontSize: "11px",
-                          color: "#bbb",
-                          marginTop: "4px",
-                        }}
+                        style={{ fontSize: 11, color: "#bbb", marginTop: 4 }}
                       >
-                        JPG, PNG, WebP — حجم أقصى 5 ميغابايت
+                        JPG, PNG, WebP — حجم أقصى 5MB
                       </div>
                     </div>
                   )}
                 </div>
-
                 <input
-                  id="imageInput"
+                  id="imgInput"
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/*"
                   style={{ display: "none" }}
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) handleImageUpload(file);
-                  }}
+                  onChange={(e) => handleImageChange(e.target.files[0])}
                 />
-              </div>
-            </div>
-
-            {/* معاينة البيانات قبل الإرسال */}
-            <div style={styles.preview}>
-              <div style={styles.previewTitle}>📋 البيانات التي ستُرسل:</div>
-              <div style={styles.previewGrid}>
-                <span style={styles.previewItem}>
-                  الكود: <strong>{itemCode || "—"}</strong>
-                </span>
-                <span style={styles.previewItem}>
-                  الاسم: <strong>{itemName || "—"}</strong>
-                </span>
-                <span style={styles.previewItem}>
-                  الفئة: <strong>{itemCat}</strong>
-                </span>
-                <span style={styles.previewItem}>
-                  الكمية: <strong>{itemQty || "0"}</strong>
-                </span>
-                <span style={styles.previewItem}>
-                  السعر: <strong>{itemPrice || "—"}</strong>
-                </span>
-                <span style={styles.previewItem}>
-                  الحد الأدنى: <strong>{itemMinQty}</strong>
-                </span>
               </div>
             </div>
 
@@ -551,7 +474,7 @@ export default function Items() {
 const styles = {
   toolbar: {
     display: "flex",
-    gap: "12px",
+    gap: 12,
     alignItems: "center",
     marginBottom: "1rem",
     flexWrap: "wrap",
@@ -559,17 +482,17 @@ const styles = {
   searchInput: {
     padding: "9px 14px",
     border: "1.5px solid #e0e0e0",
-    borderRadius: "8px",
-    fontSize: "13px",
-    width: "220px",
+    borderRadius: 8,
+    fontSize: 13,
+    width: 220,
     outline: "none",
     direction: "rtl",
   },
-  cats: { display: "flex", gap: "6px", flex: 1, flexWrap: "wrap" },
+  cats: { display: "flex", gap: 6, flex: 1, flexWrap: "wrap" },
   catBtn: {
     padding: "7px 14px",
-    borderRadius: "20px",
-    fontSize: "12px",
+    borderRadius: 20,
+    fontSize: 12,
     cursor: "pointer",
     fontWeight: 500,
     transition: "all .15s",
@@ -579,49 +502,44 @@ const styles = {
     background: "linear-gradient(135deg,#1D9E75,#0d6e50)",
     color: "#fff",
     border: "none",
-    borderRadius: "8px",
-    fontSize: "13px",
+    borderRadius: 8,
+    fontSize: 13,
     fontWeight: 600,
     cursor: "pointer",
   },
   tableCard: {
     background: "#fff",
-    borderRadius: "12px",
+    borderRadius: 12,
     boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
     overflow: "hidden",
   },
   table: { width: "100%", borderCollapse: "collapse" },
   thead: { borderBottom: "2px solid #e5e7eb", background: "#f9fafb" },
   th: {
-    padding: "12px",
+    padding: 12,
     textAlign: "right",
-    fontSize: "12px",
+    fontSize: 12,
     color: "#888",
     fontWeight: 600,
   },
   tr: { borderBottom: "1px solid #f3f4f6" },
-  td: {
-    padding: "12px",
-    textAlign: "right",
-    fontSize: "13px",
-    color: "#1a1a1a",
-  },
+  td: { padding: 12, textAlign: "right", fontSize: 13, color: "#1a1a1a" },
   catBadge: {
     background: "#e8f5f0",
     color: "#1D9E75",
     padding: "3px 10px",
-    borderRadius: "20px",
-    fontSize: "11px",
+    borderRadius: 20,
+    fontSize: 11,
     fontWeight: 500,
   },
-  actions: { display: "flex", gap: "6px" },
+  actions: { display: "flex", gap: 6 },
   editBtn: {
     padding: "5px 10px",
     background: "#eff6ff",
     color: "#3b82f6",
     border: "1px solid #bfdbfe",
-    borderRadius: "6px",
-    fontSize: "12px",
+    borderRadius: 6,
+    fontSize: 12,
     cursor: "pointer",
   },
   deleteBtn: {
@@ -629,8 +547,8 @@ const styles = {
     background: "#fef2f2",
     color: "#ef4444",
     border: "1px solid #fecaca",
-    borderRadius: "6px",
-    fontSize: "12px",
+    borderRadius: 6,
+    fontSize: 12,
     cursor: "pointer",
   },
   center: { textAlign: "center", padding: "3rem", color: "#888" },
@@ -646,11 +564,13 @@ const styles = {
   },
   modal: {
     background: "#fff",
-    borderRadius: "16px",
+    borderRadius: 16,
     width: "100%",
-    maxWidth: "560px",
+    maxWidth: 560,
     direction: "rtl",
     overflow: "hidden",
+    maxHeight: "90vh",
+    overflowY: "auto",
   },
   modalHeader: {
     padding: "1.25rem 1.5rem",
@@ -658,17 +578,16 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+    position: "sticky",
+    top: 0,
+    background: "#fff",
+    zIndex: 1,
   },
-  modalTitle: {
-    fontSize: "17px",
-    fontWeight: 700,
-    color: "#1a1a1a",
-    margin: 0,
-  },
+  modalTitle: { fontSize: 17, fontWeight: 700, color: "#1a1a1a", margin: 0 },
   closeBtn: {
     background: "none",
     border: "none",
-    fontSize: "18px",
+    fontSize: 18,
     cursor: "pointer",
     color: "#888",
   },
@@ -677,8 +596,8 @@ const styles = {
     background: "#fef2f2",
     color: "#dc2626",
     padding: "10px 14px",
-    borderRadius: "8px",
-    fontSize: "13px",
+    borderRadius: 8,
+    fontSize: 13,
   },
   formGrid: {
     display: "grid",
@@ -688,51 +607,52 @@ const styles = {
   },
   label: {
     display: "block",
-    fontSize: "13px",
+    fontSize: 13,
     color: "#555",
-    marginBottom: "5px",
+    marginBottom: 5,
     fontWeight: 500,
   },
   input: {
     width: "100%",
     padding: "10px 12px",
     border: "1.5px solid #e0e0e0",
-    borderRadius: "8px",
-    fontSize: "13px",
+    borderRadius: 8,
+    fontSize: 13,
     outline: "none",
     boxSizing: "border-box",
     direction: "rtl",
     background: "#fafafa",
   },
-  preview: {
-    margin: "0 1.5rem 1rem",
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
-    borderRadius: "8px",
-    padding: "10px 14px",
+  uploadArea: {
+    border: "2px dashed #e0e0e0",
+    borderRadius: 10,
+    padding: "1rem",
+    textAlign: "center",
+    cursor: "pointer",
+    background: "#fafafa",
+    transition: "border .2s",
+    minHeight: 100,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  previewTitle: {
-    fontSize: "12px",
-    color: "#166534",
-    fontWeight: 600,
-    marginBottom: "6px",
-  },
-  previewGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" },
-  previewItem: { fontSize: "12px", color: "#15803d" },
   modalFooter: {
     padding: "1rem 1.5rem",
     borderTop: "1px solid #e5e7eb",
     display: "flex",
-    gap: "10px",
+    gap: 10,
     justifyContent: "flex-end",
+    position: "sticky",
+    bottom: 0,
+    background: "#fff",
   },
   cancelBtn: {
     padding: "9px 20px",
     background: "#f3f4f6",
     color: "#555",
     border: "none",
-    borderRadius: "8px",
-    fontSize: "13px",
+    borderRadius: 8,
+    fontSize: 13,
     cursor: "pointer",
   },
   saveBtn: {
@@ -740,8 +660,8 @@ const styles = {
     background: "linear-gradient(135deg,#1D9E75,#0d6e50)",
     color: "#fff",
     border: "none",
-    borderRadius: "8px",
-    fontSize: "13px",
+    borderRadius: 8,
+    fontSize: 13,
     fontWeight: 600,
     cursor: "pointer",
   },
