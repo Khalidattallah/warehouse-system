@@ -100,49 +100,47 @@ export default function Items() {
     setError("");
 
     try {
-      // نستخدم FormData لإرسال الصورة مع البيانات
-      const formData = new FormData();
-      formData.append("item_code", itemCode.trim());
-      formData.append("item_name", itemName.trim());
-      formData.append("category", itemCat);
-      formData.append("quantity", itemQty || "0");
-      formData.append("price", itemPrice);
-      formData.append("min_quantity", itemMinQty || "5");
+      let finalImageUrl = itemImgUrl || null;
 
-      // أضف الصورة إذا اختار المستخدم صورة جديدة
+      // أولاً — ارفع الصورة إذا اختار المستخدم صورة جديدة
       if (imageFile) {
+        setUploading(true);
+        const formData = new FormData();
         formData.append("image", imageFile);
-      } else if (itemImgUrl) {
-        formData.append("image_url", itemImgUrl);
+        const uploadRes = await api.post("/items/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        finalImageUrl = uploadRes.data.image_url;
+        setUploading(false);
       }
 
+      // ثانياً — احفظ بيانات الصنف كـ JSON عادي
+      const body = {
+        item_code: itemCode.trim(),
+        item_name: itemName.trim(),
+        category: itemCat,
+        quantity: Number(itemQty) || 0,
+        price: Number(itemPrice),
+        min_quantity: Number(itemMinQty) || 5,
+        image_url: finalImageUrl,
+      };
+
+      console.log("body المرسل:", body);
+
       if (editItem) {
-        await api.put(`/items/${editItem.id}`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await api.put(`/items/${editItem.id}`, body);
       } else {
-        await api.post("/items", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await api.post("/items", body);
       }
 
       setShowModal(false);
       fetchItems();
     } catch (err) {
-      console.error(err.response?.data);
+      console.error("خطأ:", err.response?.data);
       setError(err.response?.data?.message || "خطأ في الحفظ");
+      setUploading(false);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
-    try {
-      await api.delete(`/items/${id}`);
-      fetchItems();
-    } catch (err) {
-      alert("لا يمكن حذف هذا الصنف");
     }
   };
 
