@@ -75,21 +75,17 @@ router.post("/", verifyToken, async (req, res) => {
       );
       if (rows.length === 0) {
         await conn.rollback();
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `الصنف غير موجود: ${item.item_name}`,
-          });
+        return res.status(400).json({
+          success: false,
+          message: `الصنف غير موجود: ${item.item_name}`,
+        });
       }
       if (rows[0].quantity < item.quantity) {
         await conn.rollback();
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `الكمية غير متوفرة للصنف: ${item.item_name}`,
-          });
+        return res.status(400).json({
+          success: false,
+          message: `الكمية غير متوفرة للصنف: ${item.item_name}`,
+        });
       }
       item.unit_price = Number(rows[0].price);
       total += item.unit_price * item.quantity;
@@ -147,13 +143,11 @@ router.post("/", verifyToken, async (req, res) => {
     });
   } catch (err) {
     await conn.rollback();
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "خطأ في إنشاء الطلب",
-        error: err.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "خطأ في إنشاء الطلب",
+      error: err.message,
+    });
   } finally {
     conn.release();
   }
@@ -185,7 +179,8 @@ router.put(
       ]);
       res.json({ success: true, message: "تم تحديث الحالة" });
     } catch (err) {
-      res.status(500).json({ success: false, message: "خطأ في الخادم" });
+      console.error("❌ خطأ في إتمام الطلب:", err);
+      return res.status(500).json({ success: false, message: "خطأ في الخادم" });
     }
   },
 );
