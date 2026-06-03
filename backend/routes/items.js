@@ -64,13 +64,11 @@ router.post(
           image_url || null,
         ],
       );
-      res
-        .status(201)
-        .json({
-          success: true,
-          message: "تم إضافة الصنف بنجاح",
-          id: result.insertId,
-        });
+      res.status(201).json({
+        success: true,
+        message: "تم إضافة الصنف بنجاح",
+        id: result.insertId,
+      });
     } catch (err) {
       if (err.code === "ER_DUP_ENTRY") {
         return res
@@ -132,28 +130,41 @@ router.delete("/:id", verifyToken, requireRole("admin"), async (req, res) => {
   }
 });
 // POST /api/items/upload — رفع صورة
-router.post(
-  "/upload",
-  verifyToken,
-  requireRole("admin", "warehouse_keeper"),
-  upload.single("image"),
-  (req, res) => {
-    if (!req.file) {
-      return res
-        .status(400)
-        .json({ success: false, message: "لم يتم رفع أي صورة" });
-    }
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const multer = require("multer");
 
-    // رابط الصورة الكامل
-    const imageUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET,
+});
 
-    res.json({
-      success: true,
-      message: "تم رفع الصورة بنجاح",
-      image_url: imageUrl,
-      filename: req.file.filename,
-    });
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: "warehouse-items",
+      allowed_formats: ["jpg", "jpeg", "png", "webp"],
+      public_id: Date.now() + "-" + file.originalname.replace(/\s/g, "_"),
+    };
   },
-);
+});
 
+const fileFilter = (req, file, cb) => {
+  const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("يُسمح فقط بصور JPG و PNG و WebP"), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+module.exports = upload;
 module.exports = router;
