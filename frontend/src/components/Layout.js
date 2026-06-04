@@ -4,17 +4,33 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Layout({ children, title }) {
   const { user } = useAuth();
-
-  // العميل لا يرى الإشعارات
   const showNotifications = user?.role !== "customer";
 
   return (
     <div style={styles.wrap}>
+      {/* CSS للجوال */}
+      <style>{`
+        @media (max-width: 768px) {
+          .sidebar-desktop { display: none !important; }
+          .menu-btn { display: flex !important; }
+          .sidebar-mobile { position: fixed !important; top: 0; right: 0; height: 100vh; box-shadow: -4px 0 20px rgba(0,0,0,0.15); }
+          .sidebar-mobile .close-btn { display: flex !important; }
+          .overlay-mobile { display: block !important; }
+          .main-content { margin-right: 0 !important; }
+          .topbar-title { padding-right: 60px; }
+        }
+        @media (min-width: 769px) {
+          .menu-btn { display: none !important; }
+          .overlay-mobile { display: none !important; }
+        }
+      `}</style>
+
       <Sidebar />
-      <div style={styles.main}>
+
+      <div style={styles.main} className="main-content">
         {/* شريط العنوان */}
         <div style={styles.topbar}>
-          <div>
+          <div className="topbar-title">
             <h1 style={styles.pageTitle}>{title}</h1>
             <p style={styles.pageDate}>
               {new Date().toLocaleDateString("ar-SA", {
@@ -25,10 +41,8 @@ export default function Layout({ children, title }) {
               })}
             </p>
           </div>
-
-          {/* الإشعارات */}
           {showNotifications && (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Notifications />
             </div>
           )}
@@ -53,6 +67,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
+    minWidth: 0,
   },
   topbar: {
     padding: "1rem 1.5rem",
