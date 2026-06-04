@@ -296,12 +296,7 @@ export default function Items() {
             <div style={styles.center}>لا توجد أصناف</div>
           )}
         </div>
-
-        {!loading && items.length === 0 && (
-          <div style={styles.center}>لا توجد أصناف</div>
-        )}
       </div>
-
       {showModal && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
