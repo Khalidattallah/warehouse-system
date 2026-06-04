@@ -33,16 +33,17 @@ select,
 textarea {
   font-family: inherit;
 }
-
 .notifications-wrapper {
-  position: fixed;
-  top: 80px;
-  left: 20px;
+  position: relative;
   z-index: 5000;
 }
-.notifications-wrapper {
+
+.notifications-dropdown {
   position: fixed;
-  top: 80px;
-  left: 20px;
-  z-index: 5000;
+  top: 60px;
+  right: 12px;
+  left: auto;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  z-index: 9999;
 }

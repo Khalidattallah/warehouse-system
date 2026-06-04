@@ -18,7 +18,6 @@ export default function Notifications() {
       const orders = ordersRes.data.data;
       const list = [];
 
-      // تنبيهات نقص المخزون
       items
         .filter((i) => i.quantity <= i.min_quantity)
         .forEach((i) => {
@@ -27,13 +26,12 @@ export default function Notifications() {
             type: "warning",
             icon: "⚠️",
             title: "نقص في المخزون",
-            message: `${i.item_name} — متبقي ${i.quantity} فقط`,
+            message: `${i.item_name} — متبقي ${i.quantity}`,
             time: "الآن",
             read: false,
           });
         });
 
-      // طلبات معلّقة
       orders
         .filter((o) => o.status === "pending")
         .slice(0, 5)
@@ -42,31 +40,9 @@ export default function Notifications() {
             id: `order-${o.id}`,
             type: "info",
             icon: "📋",
-            title: "طلب جديد بانتظار المعالجة",
+            title: "طلب جديد",
             message: `${o.order_number} — ${o.customer_name}`,
             time: new Date(o.created_at).toLocaleDateString("ar-SA"),
-            read: false,
-          });
-        });
-
-      // طلبات تم تسليمها اليوم
-      const today = new Date().toDateString();
-      orders
-        .filter((o) => {
-          return (
-            o.status === "delivered" &&
-            new Date(o.created_at).toDateString() === today
-          );
-        })
-        .slice(0, 3)
-        .forEach((o) => {
-          list.push({
-            id: `done-${o.id}`,
-            type: "success",
-            icon: "✅",
-            title: "تم تسليم طلب",
-            message: `${o.order_number} — ${o.customer_name}`,
-            time: "اليوم",
             read: false,
           });
         });
@@ -78,14 +54,12 @@ export default function Notifications() {
     }
   };
 
-  // جلب الإشعارات كل دقيقة
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // إغلاق عند الضغط خارج النافذة
   useEffect(() => {
     const handleClick = (e) => {
       if (ref.current && !ref.current.contains(e.target)) {
@@ -99,13 +73,6 @@ export default function Notifications() {
   const markAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnread(0);
-  };
-
-  const markRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
-    setUnread((prev) => Math.max(0, prev - 1));
   };
 
   const typeColors = {
@@ -124,15 +91,14 @@ export default function Notifications() {
         )}
       </button>
 
-      {/* قائمة الإشعارات */}
+      {/* القائمة */}
       {open && (
         <div style={styles.dropdown}>
-          {/* الرأس */}
           <div style={styles.header}>
             <div>
               <div style={styles.headerTitle}>الإشعارات</div>
               {unread > 0 && (
-                <div style={styles.headerSub}>{unread} إشعار غير مقروء</div>
+                <div style={styles.headerSub}>{unread} غير مقروء</div>
               )}
             </div>
             {unread > 0 && (
@@ -142,12 +108,11 @@ export default function Notifications() {
             )}
           </div>
 
-          {/* قائمة الإشعارات */}
           <div style={styles.list}>
             {notifications.length === 0 ? (
               <div style={styles.empty}>
-                <div style={{ fontSize: "40px", marginBottom: "8px" }}>🔔</div>
-                <div style={{ color: "#888", fontSize: "13px" }}>
+                <div style={{ fontSize: 36, marginBottom: 8 }}>🔔</div>
+                <div style={{ color: "#888", fontSize: 13 }}>
                   لا توجد إشعارات
                 </div>
               </div>
@@ -157,12 +122,18 @@ export default function Notifications() {
                 return (
                   <div
                     key={n.id}
-                    onClick={() => markRead(n.id)}
+                    onClick={() => {
+                      setNotifications((prev) =>
+                        prev.map((x) =>
+                          x.id === n.id ? { ...x, read: true } : x,
+                        ),
+                      );
+                      setUnread((prev) => Math.max(0, prev - (n.read ? 0 : 1)));
+                    }}
                     style={{
                       ...styles.item,
                       background: n.read ? "transparent" : colors.bg,
                       borderRight: `3px solid ${n.read ? "#e5e7eb" : colors.border}`,
-                      opacity: n.read ? 0.7 : 1,
                     }}
                   >
                     <div style={styles.itemIcon}>{n.icon}</div>
@@ -180,7 +151,14 @@ export default function Notifications() {
                     </div>
                     {!n.read && (
                       <div
-                        style={{ ...styles.dot, background: colors.border }}
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: colors.border,
+                          flexShrink: 0,
+                          marginTop: 6,
+                        }}
                       />
                     )}
                   </div>
@@ -189,7 +167,6 @@ export default function Notifications() {
             )}
           </div>
 
-          {/* الذيل */}
           <div style={styles.footer}>
             <button onClick={fetchNotifications} style={styles.refreshBtn}>
               🔄 تحديث
@@ -214,7 +191,6 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    transition: "all .2s",
   },
   badge: {
     position: "absolute",
@@ -234,28 +210,30 @@ const styles = {
     border: "2px solid #fff",
   },
   dropdown: {
-    position: "absolute",
-    top: "46px",
-    left: "-280px",
-    width: "340px",
+    position: "fixed",
+    top: "60px",
+    right: "12px",
+    left: "auto",
+    width: "320px",
+    maxWidth: "calc(100vw - 24px)",
     background: "#fff",
     borderRadius: "14px",
     boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
     border: "1px solid #e5e7eb",
-    zIndex: 999,
+    zIndex: 9999,
     overflow: "hidden",
     direction: "rtl",
   },
   header: {
-    padding: "14px 16px",
+    padding: "12px 16px",
     borderBottom: "1px solid #e5e7eb",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     background: "#f9fafb",
   },
-  headerTitle: { fontSize: "15px", fontWeight: 700, color: "#1a1a1a" },
-  headerSub: { fontSize: "11px", color: "#888", marginTop: "1px" },
+  headerTitle: { fontSize: "14px", fontWeight: 700, color: "#1a1a1a" },
+  headerSub: { fontSize: "11px", color: "#888", marginTop: 1 },
   markAllBtn: {
     fontSize: "12px",
     color: "#1D9E75",
@@ -266,8 +244,8 @@ const styles = {
     padding: "4px 8px",
     borderRadius: "6px",
   },
-  list: { maxHeight: "340px", overflowY: "auto" },
-  empty: { padding: "2.5rem", textAlign: "center" },
+  list: { maxHeight: "320px", overflowY: "auto" },
+  empty: { padding: "2rem", textAlign: "center" },
   item: {
     display: "flex",
     alignItems: "flex-start",
@@ -277,22 +255,15 @@ const styles = {
     cursor: "pointer",
     transition: "background .15s",
   },
-  itemIcon: { fontSize: "20px", flexShrink: 0, marginTop: "1px" },
-  itemTitle: { fontSize: "12px", fontWeight: 600, marginBottom: "2px" },
+  itemIcon: { fontSize: "18px", flexShrink: 0, marginTop: 1 },
+  itemTitle: { fontSize: "12px", fontWeight: 600, marginBottom: 2 },
   itemMsg: {
     fontSize: "12px",
     color: "#555",
-    marginBottom: "3px",
+    marginBottom: 3,
     lineHeight: 1.4,
   },
   itemTime: { fontSize: "11px", color: "#aaa" },
-  dot: {
-    width: "8px",
-    height: "8px",
-    borderRadius: "50%",
-    flexShrink: 0,
-    marginTop: "6px",
-  },
   footer: {
     padding: "10px 16px",
     borderTop: "1px solid #e5e7eb",
