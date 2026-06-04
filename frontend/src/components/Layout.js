@@ -10,19 +10,24 @@ export default function Layout({ children, title }) {
     <div style={styles.wrap}>
       {/* CSS للجوال */}
       <style>{`
-        @media (max-width: 768px) {
-          .sidebar-desktop { display: none !important; }
-          .menu-btn { display: flex !important; }
-          .sidebar-mobile { position: fixed !important; top: 0; right: 0; height: 100vh; box-shadow: -4px 0 20px rgba(0,0,0,0.15); }
-          .sidebar-mobile .close-btn { display: flex !important; }
-          .overlay-mobile { display: block !important; }
-          .main-content { margin-right: 0 !important; }
-          .topbar-title { padding-right: 60px; }
-        }
-        @media (min-width: 769px) {
-          .menu-btn { display: none !important; }
-          .overlay-mobile { display: none !important; }
-        }
+ @media (max-width: 768px) {
+  .sidebar-container {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 230px;
+    background: #fff;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform .3s ease;
+  }
+
+  .sidebar-container.open {
+    transform: translateX(0);
+  }
+}
+
       `}</style>
 
       <Sidebar />
