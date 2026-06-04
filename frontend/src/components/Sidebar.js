@@ -68,6 +68,7 @@ export default function Sidebar() {
     <>
       {/* زر فتح السايدبار على الجوال */}
       <button
+        className="menu-btn"
         onClick={() => setOpen(!open)}
         style={styles.menuBtn}
         aria-label="فتح القائمة"
