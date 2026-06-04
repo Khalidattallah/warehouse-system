@@ -10,7 +10,14 @@ export default function Layout({ children, title }) {
     <div style={styles.wrap}>
       {/* CSS للجوال */}
       <style>{`
- @media (max-width: 768px) {
+@media (max-width: 768px) {
+
+  /* زر القائمة يظهر فقط على الجوال */
+  .menu-btn {
+    display: flex !important;
+  }
+
+  /* السايدبار في الجوال */
   .sidebar-container {
     position: fixed !important;
     top: 0;
@@ -21,12 +28,39 @@ export default function Layout({ children, title }) {
     z-index: 1000;
     transform: translateX(100%);
     transition: transform .3s ease;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
   }
 
+  /* عند الفتح */
   .sidebar-container.open {
     transform: translateX(0);
   }
+
+  /* الخلفية الداكنة */
+  .overlay-mobile {
+    display: block !important;
+  }
+
+  /* المحتوى */
+  .main-content {
+    margin-right: 0 !important;
+  }
+
+  .topbar-title {
+    padding-right: 60px;
+  }
 }
+
+/* على الكمبيوتر */
+@media (min-width: 769px) {
+  .menu-btn {
+    display: none !important;
+  }
+  .overlay-mobile {
+    display: none !important;
+  }
+}
+
 
       `}</style>
 

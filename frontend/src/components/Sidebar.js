@@ -80,6 +80,7 @@ export default function Sidebar() {
 
       {/* السايدبار */}
       <div
+        className={`sidebar-container ${open ? "open" : ""}`}
         style={{
           ...styles.sidebar,
           transform: open
