@@ -81,7 +81,7 @@ export default function Layout({ children, title }) {
             </p>
           </div>
           {showNotifications && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="notifications-wrapper">
               <Notifications />
             </div>
           )}

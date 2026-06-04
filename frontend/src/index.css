@@ -33,3 +33,10 @@ select,
 textarea {
   font-family: inherit;
 }
+
+.notifications-wrapper {
+  position: fixed;
+  top: 80px;
+  left: 20px;
+  z-index: 5000;
+}
