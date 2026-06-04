@@ -76,7 +76,13 @@ export default function Sidebar() {
       </button>
 
       {/* خلفية داكنة عند فتح السايدبار على الجوال */}
-      {open && <div style={styles.overlay} onClick={() => setOpen(false)} />}
+      {open && (
+        <div
+          className="overlay-mobile"
+          style={styles.overlay}
+          onClick={() => setOpen(false)}
+        />
+      )}
 
       {/* السايدبار */}
       <div
