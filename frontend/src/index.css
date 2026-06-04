@@ -33,29 +33,3 @@ select,
 textarea {
   font-family: inherit;
 }
-
-/* Responsive */
-@media (max-width: 768px) {
-  .menu-btn {
-    display: flex !important;
-  }
-
-  /* السايدبار يختفي افتراضياً على الجوال */
-  nav > div:first-child {
-    transform: translateX(100%);
-  }
-
-  /* تصغير المحتوى */
-  .content {
-    padding: 1rem !important;
-  }
-
-  /* الجداول تصبح scrollable */
-  table {
-    min-width: 600px;
-  }
-
-  div[style*="overflow: hidden"] {
-    overflow-x: auto !important;
-  }
-}
