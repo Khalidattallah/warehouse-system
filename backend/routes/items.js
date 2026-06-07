@@ -23,13 +23,11 @@ router.get("/", verifyToken, async (req, res) => {
     res.json({ success: true, data: rows });
   } catch (err) {
     console.error("GET /items:", err.message);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "خطأ في جلب الأصناف",
-        error: err.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "خطأ في جلب الأصناف",
+      error: err.message,
+    });
   }
 });
 
@@ -51,13 +49,11 @@ router.post(
       res.json({ success: true, image_url: imageUrl });
     } catch (err) {
       console.error("upload error:", err.message);
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "خطأ في رفع الصورة",
-          error: err.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "خطأ في رفع الصورة",
+        error: err.message,
+      });
     }
   },
 );
@@ -99,13 +95,11 @@ router.post(
         ],
       );
 
-      res
-        .status(201)
-        .json({
-          success: true,
-          message: "تم إضافة الصنف",
-          id: result.insertId,
-        });
+      res.status(201).json({
+        success: true,
+        message: "تم إضافة الصنف",
+        id: result.insertId,
+      });
     } catch (err) {
       console.error("POST /items:", err.message);
       if (err.code === "ER_DUP_ENTRY") {
@@ -163,10 +157,18 @@ router.put(
 // DELETE /api/items/:id
 router.delete("/:id", verifyToken, requireRole("admin"), async (req, res) => {
   try {
+    console.log("DELETE /items/:id =", req.params.id);
+
     await db.query("DELETE FROM items WHERE id = ?", [req.params.id]);
+
     res.json({ success: true, message: "تم حذف الصنف" });
   } catch (err) {
-    res.status(500).json({ success: false, message: "لا يمكن حذف الصنف" });
+    console.error("❌ DELETE items:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "لا يمكن حذف الصنف — قد يكون مرتبطاً بطلبات",
+      error: err.message,
+    });
   }
 });
 
