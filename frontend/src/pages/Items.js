@@ -83,16 +83,6 @@ export default function Items() {
   };
 
   const handleSave = async () => {
-    const handleDelete = async (id) => {
-      if (!window.confirm("هل أنت متأكد من حذف هذا الصنف؟")) return;
-      try {
-        await api.delete(`/items/${id}`);
-        fetchItems();
-      } catch (err) {
-        console.error(err.response?.data);
-        alert(err.response?.data?.message || "لا يمكن حذف هذا الصنف");
-      }
-    };
     if (!itemCode.trim()) {
       setError("كود الصنف مطلوب");
       return;
@@ -153,7 +143,16 @@ export default function Items() {
       setSaving(false);
     }
   };
-
+  const handleDelete = async (id) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذا الصنف؟")) return;
+    try {
+      await api.delete(`/items/${id}`);
+      fetchItems();
+    } catch (err) {
+      console.error(err.response?.data);
+      alert(err.response?.data?.message || "لا يمكن حذف هذا الصنف");
+    }
+  };
   return (
     <Layout title="إدارة الأصناف">
       <div style={styles.toolbar}>
