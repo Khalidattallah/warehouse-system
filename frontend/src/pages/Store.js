@@ -216,7 +216,7 @@ export default function Store() {
                   {/* شارة الكمية المحدودة */}
                   {item.quantity <= 10 && (
                     <span style={styles.lowBadge}>
-                      آخر {item.quantity} قطعة!
+                      آخر {item.quantity} متر!
                     </span>
                   )}
                   {/* زر التكبير */}
@@ -235,7 +235,7 @@ export default function Store() {
                         <span style={styles.currency}> ج.س</span>
                       </div>
                       <div style={styles.itemStock}>
-                        متوفر: {item.quantity} قطعة
+                        متوفر: {item.quantity} متر
                       </div>
                     </div>
                   </div>
@@ -335,7 +335,7 @@ export default function Store() {
                         color: showItem.quantity <= 10 ? "#ef4444" : "#1D9E75",
                       }}
                     >
-                      {showItem.quantity} قطعة
+                      {showItem.quantity} متر
                     </span>
                   </div>
                   <div style={styles.infoRow}>
@@ -634,7 +634,7 @@ export default function Store() {
                 <div style={styles.summaryRow}>
                   <span style={{ color: "#888" }}>عدد الأصناف</span>
                   <span>
-                    {cart.length} صنف ({cartCount} قطعة)
+                    {cart.length} صنف ({cartCount} متر)
                   </span>
                 </div>
                 <div style={styles.summaryRow}>
